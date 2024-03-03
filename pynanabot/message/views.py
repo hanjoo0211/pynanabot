@@ -19,7 +19,7 @@ class SentMessageViewSet(viewsets.ModelViewSet):
 
 class ReplyViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    
+
     def create(self, request):
         room = request.data.get('room')
         sender = request.data.get('sender')
@@ -36,7 +36,11 @@ class ReplyViewSet(viewsets.ViewSet):
 
         # 메시지 분기 필요
         if "시치" in message:
-            reply_message = "아오 페리시치"
+            words = message.split()
+            for word in words:
+                if "시치" in word:
+                    prior_sic = word.split("시치")[0]
+                    reply_message = f"아오 {prior_sic}시치"
         
         if reply_message:
             SentMessage.objects.create(
