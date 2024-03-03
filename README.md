@@ -5,4 +5,5 @@ Bananabot using Django REST framework
 2. `source env/bin/activate`
 3. `pip install -r requirements.txt`
 4. set .env file appropriately (django secret key)
-5. `python3 manage.py runserver 0.0.0.0:[port number]` for outbound connection
+5. `python3 manage.py migrate`
+6. `python3 manage.py runserver 0.0.0.0:[port number]` for outbound connection
