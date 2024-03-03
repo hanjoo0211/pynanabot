@@ -40,6 +40,8 @@ class ReplyViewSet(viewsets.ViewSet):
             for word in words:
                 if "시치" in word:
                     prior_sic = word.split("시치")[0]
+                    if not prior_sic:
+                        prior_sic = "페리"
                     reply_message = f"아오 {prior_sic}시치"
         
         if reply_message:
