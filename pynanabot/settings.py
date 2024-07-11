@@ -28,9 +28,11 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
+EXTERNAL_IP_ADDRESS = env('HOST')
+
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [EXTERNAL_IP_ADDRESS, 'localhost']
 
 
 # Application definition
