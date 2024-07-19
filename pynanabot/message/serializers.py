@@ -1,5 +1,6 @@
-from .models import ReceivedMessage, SentMessage
 from rest_framework import serializers
+
+from .models import ReceivedMessage, SentMessage
 
 
 class ReceivedMessageSerializer(serializers.ModelSerializer):
