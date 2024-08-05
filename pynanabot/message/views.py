@@ -1,8 +1,10 @@
 from rest_framework import permissions, viewsets
 from rest_framework.response import Response
 
+from ..settings import env
 from .models import ReceivedMessage, SentMessage
 from .serializers import ReceivedMessageSerializer, SentMessageSerializer
+from .teams_workflow.text import teams_text_message
 
 
 class ReceivedMessageViewSet(viewsets.ModelViewSet):
@@ -35,15 +37,28 @@ class ReplyViewSet(viewsets.ViewSet):
         reply_message = None
         reply_room = room # 기본값은 메시지 받은 방으로 설정
 
-        # 메시지 분기 필요
-        if "시치" in message:
-            words = message.split()
-            for word in words:
-                if "시치" in word:
-                    prior_sic = word.split("시치")[0]
-                    if not prior_sic:
-                        prior_sic = "페리"
-                    reply_message = f"아오 {prior_sic}시치"
+        # TODO: 메시지 분기 필요
+        if not is_group_chat or room == env('BANANA_GROUPTALK'):
+            if "시치" in message:
+                words = message.split()
+                for word in words:
+                    if "시치" in word:
+                        prior_sic = word.split("시치")[0]
+                        if not prior_sic:
+                            prior_sic = "페리"
+                        reply_message = f"아오 {prior_sic}시치"
+                        
+        # 오픈채팅 주식 공지
+        if message.startswith("# ") and room == env('LG_STOCKS_ROOM'):
+            try:
+                teams_text_message(
+                    url=env('TEAMS_TEST_URL'),
+                    message=message
+                )
+            except Exception as e:
+                print(e)
+            reply_room = env('BANANA_GROUPTALK')
+            reply_message = message
   
         # 메시지 저장
         if reply_message:
