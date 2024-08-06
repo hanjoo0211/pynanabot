@@ -50,6 +50,7 @@ class ReplyViewSet(viewsets.ViewSet):
                         
         # 오픈채팅 주식 공지
         if message.startswith("# ") and room == env('LG_STOCKS_ROOM'):
+            message += "..."
             try:
                 teams_text_message(
                     url=env('TEAMS_TEST_URL'),
