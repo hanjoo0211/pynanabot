@@ -1,0 +1,9 @@
+version: "3.12"
+
+services:
+  pynanabot_service:
+    ports:
+      - "8000:8000"
+    build:
+      context: .
+      dockerfile: Dockerfile
