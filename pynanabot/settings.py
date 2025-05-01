@@ -33,7 +33,7 @@ EXTERNAL_IP_ADDRESS = env('HOST')
 
 DEBUG = True
 
-ALLOWED_HOSTS = [EXTERNAL_IP_ADDRESS, 'localhost']
+ALLOWED_HOSTS = [EXTERNAL_IP_ADDRESS, 'localhost', 'hzzz.site']
 
 
 # Application definition
