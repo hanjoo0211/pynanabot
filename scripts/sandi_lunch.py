@@ -89,7 +89,7 @@ def fetch_menu(store_id, building_id, name):
 
     if response.status_code == 200:
         data = response.json()
-        items = data.get("items", [])
+        post_items = data.get("items", [])
         today_str = datetime.now().strftime("%Y/%m/%d")
         # today_for_title_CJ = datetime.now().strftime("%-m월 %-d일")
         # today_for_title_OURHOME = datetime.now().strftime("%m월 %d일")
@@ -101,16 +101,16 @@ def fetch_menu(store_id, building_id, name):
         ]
 
         print(f"\n[{name}] 게시글 확인 중 ({today_str})...")
-        for item in items:
+        for item in post_items:
             title = item.get("title", "")
             
             # if today_for_title_CJ in title or today_for_title_OURHOME in title:
             if any(today in title for today in today_for_title):
                 file_info = item.get("fileInfo", {})
-                items = file_info.get("items", [])
+                image_items = file_info.get("items", [])
                 # 이미지 URL 추출
                 image_urls = [
-                    item.get("url") for item in items if item.get("scale") == "full"
+                    item.get("url") for item in image_items if item.get("scale") == "full"
                 ]
 
                 if not image_urls:
