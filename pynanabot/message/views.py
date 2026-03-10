@@ -63,12 +63,15 @@ class ReplyViewSet(viewsets.ViewSet):
         system_prompt = _load_system_prompt()
 
         # 호출 1: 응답 판단 + 생성
-        reply_message = get_reply(
-            context_messages=context_messages,
-            sender_profile=sender_profile,
-            system_prompt=system_prompt,
-            model=settings.LLM_MODEL,
-        )
+        if settings.BOT_REPLY_ENABLED:
+            reply_message = get_reply(
+                context_messages=context_messages,
+                sender_profile=sender_profile,
+                system_prompt=system_prompt,
+                model=settings.LLM_MODEL,
+            )
+        else:
+            reply_message = None
 
         # 호출 2: 프로필 갱신
         updated_profile = get_updated_profile(
