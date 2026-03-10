@@ -78,9 +78,9 @@ class ReplyViewSet(viewsets.ViewSet):
                 model=settings.LLM_MODEL,
             )
             if candidate:
-                print(f"[잠입모드] would reply: {candidate}")
+                print(f"[잠입모드] \"{message}\" → would reply: {candidate}")
             else:
-                print(f"[잠입모드] would not reply")
+                print(f"[잠입모드] \"{message}\" → would not reply")
             reply_message = None
 
         # 호출 2: 프로필 갱신
