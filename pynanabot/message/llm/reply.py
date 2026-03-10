@@ -23,5 +23,7 @@ def get_reply(
         ],
     )
 
+    if not response.choices:
+        return None
     content = response.choices[0].message.content
     return content if content else None
