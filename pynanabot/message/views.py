@@ -1,10 +1,23 @@
+from pathlib import Path
+
+from django.conf import settings
 from rest_framework import permissions, viewsets
 from rest_framework.response import Response
 
-from ..settings import env
 from .models import ReceivedMessage, SentMessage
 from .serializers import ReceivedMessageSerializer, SentMessageSerializer
-from .teams_workflow.text import teams_text_message
+from .llm.reply import get_reply
+from .llm.profile import get_updated_profile
+from .profile_store import read_profile, write_profile
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+SYSTEM_PROMPT_PATH = BASE_DIR / 'prompts' / 'system.md'
+
+
+def _load_system_prompt() -> str:
+    if SYSTEM_PROMPT_PATH.exists():
+        return SYSTEM_PROMPT_PATH.read_text(encoding='utf-8')
+    return '너는 단체 채팅방 봇이야. 자연스럽다고 판단될 때만 응답해. 아니면 아무것도 출력하지 마.'
 
 
 class ReceivedMessageViewSet(viewsets.ModelViewSet):
@@ -27,49 +40,53 @@ class ReplyViewSet(viewsets.ViewSet):
         sender = request.data.get('sender')
         is_group_chat = request.data.get('isGroupChat')
         message = request.data.get('message')
+
         received_message = ReceivedMessage.objects.create(
             room=room,
             sender=sender,
             is_group_chat=is_group_chat,
-            message=message
+            message=message,
         )
 
-        reply_message = None
-        reply_room = room # 기본값은 메시지 받은 방으로 설정
+        # 같은 방의 최근 N개 메시지 (시간순)
+        context_qs = (
+            ReceivedMessage.objects
+            .filter(room=room)
+            .order_by('-created_at')[:settings.CONTEXT_MESSAGE_COUNT]
+        )
+        context_messages = [
+            {'sender': m.sender, 'message': m.message}
+            for m in reversed(list(context_qs))
+        ]
 
-        # TODO: 메시지 분기 필요
-        if not is_group_chat or room == env('BANANA_GROUPTALK'):
-            if "시치" in message:
-                words = message.split()
-                for word in words:
-                    if "시치" in word:
-                        prior_sic = word.split("시치")[0]
-                        if not prior_sic:
-                            prior_sic = "페리"
-                        reply_message = f"아오 {prior_sic}시치"
-                        
-        # 오픈채팅 주식 공지
-        if message.startswith("# ") and room == env('LG_STOCKS_ROOM'):
-            message += "..."
-            try:
-                teams_text_message(
-                    url=env('TEAMS_TEST_URL'),
-                    message=message
-                )
-            except Exception as e:
-                print(e)
-            reply_room = env('BANANA_GROUPTALK')
-            reply_message = message
-  
-        # 메시지 저장
+        sender_profile = read_profile(sender)
+        system_prompt = _load_system_prompt()
+
+        # 호출 1: 응답 판단 + 생성
+        reply_message = get_reply(
+            context_messages=context_messages,
+            sender_profile=sender_profile,
+            system_prompt=system_prompt,
+            model=settings.LLM_MODEL,
+        )
+
+        # 호출 2: 프로필 갱신
+        updated_profile = get_updated_profile(
+            message=message,
+            current_profile=sender_profile,
+            model=settings.LLM_MODEL,
+        )
+        if updated_profile:
+            write_profile(sender, updated_profile)
+
         if reply_message:
             SentMessage.objects.create(
-                room=reply_room,
+                room=room,
                 reply_to=received_message,
-                message=reply_message
+                message=reply_message,
             )
-        
+
         return Response({
-            "room": reply_room,
-            "message": reply_message
+            'room': room,
+            'message': reply_message,
         })
