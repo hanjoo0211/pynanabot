@@ -1,7 +1,9 @@
+import tempfile
 from unittest.mock import patch, MagicMock
 from django.test import TestCase
 from pynanabot.message.llm.reply import get_reply
 from pynanabot.message.llm.profile import get_updated_profile
+from pynanabot.message.profile_store import read_profile, write_profile
 
 
 class GetReplyTest(TestCase):
@@ -68,3 +70,17 @@ class GetUpdatedProfileTest(TestCase):
             model='test-model',
         )
         self.assertIsNone(result)
+
+
+class ProfileStoreTest(TestCase):
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+
+    def test_read_returns_empty_string_when_file_not_exists(self):
+        result = read_profile('없는사람', profiles_dir=self.tmpdir)
+        self.assertEqual(result, '')
+
+    def test_write_and_read_profile(self):
+        write_profile('홍길동', '주식에 관심 많음', profiles_dir=self.tmpdir)
+        result = read_profile('홍길동', profiles_dir=self.tmpdir)
+        self.assertEqual(result, '주식에 관심 많음')
