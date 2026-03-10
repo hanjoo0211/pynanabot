@@ -74,7 +74,11 @@ class GetUpdatedProfileTest(TestCase):
 
 class ProfileStoreTest(TestCase):
     def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.tmpdir = self._tmpdir.name
+
+    def tearDown(self):
+        self._tmpdir.cleanup()
 
     def test_read_returns_empty_string_when_file_not_exists(self):
         result = read_profile('없는사람', profiles_dir=self.tmpdir)
