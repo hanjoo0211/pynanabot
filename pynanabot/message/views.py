@@ -71,6 +71,16 @@ class ReplyViewSet(viewsets.ViewSet):
                 model=settings.LLM_MODEL,
             )
         else:
+            candidate = get_reply(
+                context_messages=context_messages,
+                sender_profile=sender_profile,
+                system_prompt=system_prompt,
+                model=settings.LLM_MODEL,
+            )
+            if candidate:
+                print(f"[잠입모드] would reply: {candidate}")
+            else:
+                print(f"[잠입모드] would not reply")
             reply_message = None
 
         # 호출 2: 프로필 갱신
