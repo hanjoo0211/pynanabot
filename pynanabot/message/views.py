@@ -48,15 +48,25 @@ class ReplyViewSet(viewsets.ViewSet):
             message=message,
         )
 
-        # 같은 방의 최근 N개 메시지 (시간순)
-        context_qs = (
+        # 같은 방의 최근 N개 메시지 (시간순, 봇 메시지 포함)
+        received_qs = list(
             ReceivedMessage.objects
             .filter(room=room)
             .order_by('-created_at')[:settings.CONTEXT_MESSAGE_COUNT]
         )
+        sent_qs = list(
+            SentMessage.objects
+            .filter(room=room)
+            .order_by('-created_at')[:settings.CONTEXT_MESSAGE_COUNT]
+        )
+        combined = sorted(
+            [{'sender': m.sender, 'message': m.message, 'created_at': m.created_at} for m in received_qs] +
+            [{'sender': '[봇]', 'message': m.message, 'created_at': m.created_at} for m in sent_qs],
+            key=lambda x: x['created_at']
+        )
         context_messages = [
-            {'sender': m.sender, 'message': m.message}
-            for m in reversed(list(context_qs))
+            {'sender': m['sender'], 'message': m['message']}
+            for m in combined[-settings.CONTEXT_MESSAGE_COUNT:]
         ]
 
         sender_profile = read_profile(sender)
