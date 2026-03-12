@@ -90,24 +90,23 @@ class ReplyViewSet(viewsets.ViewSet):
         # 호출 2: 응답 생성
         reply_message = None
         if do_reply:
+            candidate = get_reply(
+                context_messages=context_messages,
+                sender_profile=sender_profile,
+                system_prompt=system_prompt,
+                model=settings.LLM_MODEL,
+            )
             if settings.BOT_REPLY_ENABLED:
-                reply_message = get_reply(
-                    context_messages=context_messages,
-                    sender_profile=sender_profile,
-                    system_prompt=system_prompt,
-                    model=settings.LLM_MODEL,
-                )
-            else:
-                candidate = get_reply(
-                    context_messages=context_messages,
-                    sender_profile=sender_profile,
-                    system_prompt=system_prompt,
-                    model=settings.LLM_MODEL,
-                )
-                if candidate:
-                    print(f"[잠입모드] \"{message}\" → would reply: {candidate}")
+                reply_message = candidate
+                if reply_message:
+                    print(f"[응답] \"{message}\" → {reply_message}")
                 else:
-                    print(f"[잠입모드] \"{message}\" → would not reply")
+                    print(f"[응답] \"{message}\" → (빈 응답)")
+            else:
+                if candidate:
+                    print(f"[잠입모드] \"{message}\" → {candidate}")
+                else:
+                    print(f"[잠입모드] \"{message}\" → (빈 응답)")
         else:
             print(f"[판단] \"{message}\" → skip")
 
