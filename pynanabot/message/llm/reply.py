@@ -1,4 +1,10 @@
+import re
+
 from .client import get_client
+
+
+def _trim_repeated_chars(text: str) -> str:
+    return re.sub(r'([ㅋㅠㄷㅎㅜㅡ])\1{9,}', lambda m: m.group(1) * 10, text)
 
 
 def should_reply(
@@ -54,4 +60,6 @@ def get_reply(
     if not response.choices:
         return None
     content = response.choices[0].message.content
-    return content if content else None
+    if not content:
+        return None
+    return _trim_repeated_chars(content)
