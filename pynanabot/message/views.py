@@ -6,18 +6,25 @@ from rest_framework.response import Response
 
 from .models import ReceivedMessage, SentMessage
 from .serializers import ReceivedMessageSerializer, SentMessageSerializer
-from .llm.reply import get_reply
+from .llm.reply import get_reply, should_reply
 from .llm.profile import get_updated_profile
 from .profile_store import read_profile, write_profile
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 SYSTEM_PROMPT_PATH = BASE_DIR / 'prompts' / 'system.md'
+DECISION_PROMPT_PATH = BASE_DIR / 'prompts' / 'decision.md'
 
 
 def _load_system_prompt() -> str:
     if SYSTEM_PROMPT_PATH.exists():
         return SYSTEM_PROMPT_PATH.read_text(encoding='utf-8')
     return '너는 단체 채팅방 봇이야. 자연스럽다고 판단될 때만 응답해. 아니면 아무것도 출력하지 마.'
+
+
+def _load_decision_prompt() -> str:
+    if DECISION_PROMPT_PATH.exists():
+        return DECISION_PROMPT_PATH.read_text(encoding='utf-8')
+    return '최근 대화를 보고 응답해야 하면 yes, 아니면 no만 출력해.'
 
 
 class ReceivedMessageViewSet(viewsets.ModelViewSet):
@@ -71,36 +78,47 @@ class ReplyViewSet(viewsets.ViewSet):
 
         sender_profile = read_profile(sender)
         system_prompt = _load_system_prompt()
+        decision_prompt = _load_decision_prompt()
 
-        # 호출 1: 응답 판단 + 생성
-        if settings.BOT_REPLY_ENABLED:
-            reply_message = get_reply(
-                context_messages=context_messages,
-                sender_profile=sender_profile,
-                system_prompt=system_prompt,
-                model=settings.LLM_MODEL,
-            )
-        else:
-            candidate = get_reply(
-                context_messages=context_messages,
-                sender_profile=sender_profile,
-                system_prompt=system_prompt,
-                model=settings.LLM_MODEL,
-            )
-            if candidate:
-                print(f"[잠입모드] \"{message}\" → would reply: {candidate}")
-            else:
-                print(f"[잠입모드] \"{message}\" → would not reply")
-            reply_message = None
-
-        # 호출 2: 프로필 갱신
-        updated_profile = get_updated_profile(
-            message=message,
-            current_profile=sender_profile,
+        # 호출 1: 응답 여부 판단
+        do_reply = should_reply(
+            context_messages=context_messages,
+            decision_prompt=decision_prompt,
             model=settings.LLM_MODEL,
         )
-        if updated_profile:
-            write_profile(sender, updated_profile)
+
+        # 호출 2: 응답 생성
+        reply_message = None
+        if do_reply:
+            if settings.BOT_REPLY_ENABLED:
+                reply_message = get_reply(
+                    context_messages=context_messages,
+                    sender_profile=sender_profile,
+                    system_prompt=system_prompt,
+                    model=settings.LLM_MODEL,
+                )
+            else:
+                candidate = get_reply(
+                    context_messages=context_messages,
+                    sender_profile=sender_profile,
+                    system_prompt=system_prompt,
+                    model=settings.LLM_MODEL,
+                )
+                if candidate:
+                    print(f"[잠입모드] \"{message}\" → would reply: {candidate}")
+                else:
+                    print(f"[잠입모드] \"{message}\" → would not reply")
+        else:
+            print(f"[판단] \"{message}\" → skip")
+
+        # 호출 2: 프로필 갱신 (비활성화)
+        # updated_profile = get_updated_profile(
+        #     message=message,
+        #     current_profile=sender_profile,
+        #     model=settings.LLM_MODEL,
+        # )
+        # if updated_profile:
+        #     write_profile(sender, updated_profile)
 
         if reply_message:
             SentMessage.objects.create(
