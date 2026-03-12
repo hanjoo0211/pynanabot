@@ -139,3 +139,12 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10
 }
+
+
+# LLM
+
+LLM_API_KEY = env('LLM_API_KEY', default='')
+LLM_BASE_URL = env('LLM_BASE_URL', default='')
+LLM_MODEL = env('LLM_MODEL', default='')
+CONTEXT_MESSAGE_COUNT = env.int('CONTEXT_MESSAGE_COUNT', default=50)
+BOT_REPLY_ENABLED = env.bool('BOT_REPLY_ENABLED', default=True)
